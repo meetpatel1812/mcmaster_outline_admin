@@ -144,4 +144,20 @@ if submitted:
                         message=f"Add PDF for {course_name}",
                         content=pdf_content
                     )
-                st.success("PDF uploaded successfu
+                st.success("PDF uploaded successfully!")
+            except Exception as e:
+                st.error(f"Error uploading PDF: {str(e)}")
+
+        # Update the `pdf_data.py` file
+        try:
+            pdfs_list = json.dumps(courses, indent=4)
+            pdfs_code = f"pdfs = {pdfs_list}"
+            repo.update_file(
+                path=file_path,
+                message="Update course data",
+                content=pdfs_code,
+                sha=repo.get_contents(file_path).sha
+            )
+            st.success("Course data updated successfully!")
+        except Exception as e:
+            st.error(f"Error updating course data on GitHub: {str(e)}")
