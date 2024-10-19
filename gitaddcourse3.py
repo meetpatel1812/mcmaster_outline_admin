@@ -29,8 +29,8 @@ stream_options = [
 semester_options = ["Fall", "Winter", "Summer"]
 
 # GitHub repository details
-github_token = st.secrets["GITHUB_TOKEN"]  # Store token securely using Streamlit secrets
-# github_token = st.secrets.get("GITHUB_TOKEN")
+# github_token = st.secrets["GITHUB_TOKEN"]  # Store token securely using Streamlit secrets
+github_token = st.secrets.get("GITHUB_TOKEN")
 repo_name = "meetpatel1812/mcmaster_course_outline_app"
 file_path = "pdf_data.py"  # Update this with the correct path in your repo
 
