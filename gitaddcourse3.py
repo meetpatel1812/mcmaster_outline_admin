@@ -29,13 +29,23 @@ stream_options = [
 semester_options = ["Fall", "Winter", "Summer"]
 
 # GitHub repository details
-github_token = st.secrets.get("GITHUB_TOKEN")
+github_token = st.secrets["GITHUB_TOKEN"]  # Store token securely using Streamlit secrets
+# github_token = st.secrets.get("GITHUB_TOKEN")
 repo_name = "meetpatel1812/mcmaster_course_outline_app"
 file_path = "pdf_data.py"  # Update this with the correct path in your repo
 
 # Initialize GitHub instance
 g = Github(github_token)
 repo = g.get_repo(repo_name)
+
+# Function to fetch courses from GitHub
+# def fetch_courses():
+#     contents = repo.get_contents(file_path)
+#     file_content = contents.decoded_content.decode("utf-8")
+#     exec(file_content)  # This will load the `pdfs` variable
+#     return pdfs
+
+import ast
 
 # Function to fetch courses from GitHub
 def fetch_courses():
@@ -65,15 +75,20 @@ except Exception as e:
 # Course Addition, Modification, and Deletion Header
 st.header("Admin Course Management")
 
+# # Fetch existing courses from GitHub
+# try:
+#     courses = fetch_courses()
+# except Exception as e:
+#     st.error(f"Error loading courses from GitHub: {str(e)}")
+#     courses = []
+
 # Course Addition Form
 st.subheader("Add / Modify Course")
 st.divider()
-
 # Select course for modification
 course_names = [course['name'] for course in courses]
 selected_course_name = st.selectbox("Select a Course to Modify (or leave blank to add a new course)", [""] + course_names)
 st.divider()
-
 # If a course is selected, load its details for modification
 if selected_course_name:
     selected_course = next((course for course in courses if course["name"] == selected_course_name), None)
@@ -127,7 +142,7 @@ if submitted:
         # Save the PDF file to GitHub (if a new file is uploaded)
         if uploaded_file:
             try:
-                pdf_content = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
+                pdf_content = uploaded_file.getvalue()
                 pdf_github_path = f"Course/{category.replace(' ', '_')}/{uploaded_file.name}"
 
                 try:
@@ -161,3 +176,113 @@ if submitted:
             st.success("Course data updated successfully!")
         except Exception as e:
             st.error(f"Error updating course data on GitHub: {str(e)}")
+st.divider()
+# # Course Deletion Section
+# st.subheader("Delete Course")
+
+# # Select course for deletion
+# course_to_delete = st.selectbox("Select a Course to Delete", course_names)
+
+# # Delete button
+# if st.button("Delete Course"):
+#     if course_to_delete:
+#         # Filter out the selected course
+#         courses = [course for course in courses if course["name"] != course_to_delete]
+
+#         # Remove associated PDF from GitHub
+#         try:
+#             course_to_delete_data = next(course for course in courses if course["name"] == course_to_delete)
+#             pdf_github_path = course_to_delete_data['file_path']
+
+#             # Delete the PDF file from GitHub
+#             try:
+#                 existing_file = repo.get_contents(pdf_github_path)
+#                 repo.delete_file(
+#                     path=pdf_github_path,
+#                     message=f"Delete PDF for {course_to_delete}",
+#                     sha=existing_file.sha
+#                 )
+#                 st.success("PDF deleted successfully!")
+#             except:
+#                 st.warning("PDF file not found in the repository.")
+#         except StopIteration:
+#             st.error("Course not found.")
+
+#         # Update the `pdf_data.py` file
+#         try:
+#             pdfs_list = json.dumps(courses, indent=4)
+#             pdfs_code = f"pdfs = {pdfs_list}"
+#             repo.update_file(
+#                 path=file_path,
+#                 message="Delete course data",
+#                 content=pdfs_code,
+#                 sha=repo.get_contents(file_path).sha
+#             )
+#             st.success("Course deleted successfully!")
+#         except Exception as e:
+#             st.error(f"Error updating course data on GitHub: {str(e)}")
+#     else:
+#         st.error("Please select a course to delete.")
+
+st.subheader("Delete Course")
+
+# Select course for deletion
+course_to_delete = st.selectbox("Select a Course to Delete", course_names)
+
+# Delete button
+if st.button("Delete Course"):
+    if course_to_delete:
+        try:
+            # Find the course details before filtering it out
+            course_to_delete_data = next(course for course in courses if course["name"] == course_to_delete)
+            pdf_github_path = course_to_delete_data['file_path']  # Store the file path for later use
+
+            # Remove the course from the courses list
+            courses = [course for course in courses if course["name"] != course_to_delete]
+
+            # Remove associated PDF from GitHub
+            try:
+                existing_file = repo.get_contents(pdf_github_path)
+                repo.delete_file(
+                    path=pdf_github_path,
+                    message=f"Delete PDF for {course_to_delete}",
+                    sha=existing_file.sha
+                )
+                st.success("PDF deleted successfully!")
+            except:
+                st.warning("PDF file not found in the repository.")
+
+            # Update the `pdf_data.py` file with the new courses list
+            try:
+                pdfs_list = json.dumps(courses, indent=4)
+                pdfs_code = f"pdfs = {pdfs_list}"
+                repo.update_file(
+                    path=file_path,
+                    message="Delete course data",
+                    content=pdfs_code,
+                    sha=repo.get_contents(file_path).sha
+                )
+                st.success("Course deleted successfully!")
+            except Exception as e:
+                st.error(f"Error updating course data on GitHub: {str(e)}")
+
+        except StopIteration:
+            st.error("Course not found.")
+    else:
+        st.error("Please select a course to delete.")
+st.divider()
+st.subheader("List of Courses that already added")
+st.divider()
+
+try:
+    # Fetch the file from the repository
+    contents = repo.get_contents(file_path)
+    file_content = contents.decoded_content.decode("utf-8")
+
+    # Parse the 'pdfs' list from the file content
+    exec(file_content)  # Execute the file content to load the `pdfs` list
+
+    for course in pdfs:
+        st.write(f"**{course['name']}** - {course['label']} ({course['category']})")
+except Exception as e:
+    st.error(f"Error loading courses from GitHub: {str(e)}")
